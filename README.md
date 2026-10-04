@@ -1,5 +1,7 @@
 # supertonic3-tts-german-wyoming
 
+![Project and Unraid CA icon](icons/supertonic3-tts-german-wyoming.png)
+
 Local German text-to-speech for Home Assistant, written in Rust, using Supertonic 3 and ONNX Runtime with a native Wyoming server. CPU only; tested on an Intel N100 (four cores). No Python sidecar, GPU provider, quantization or resampling.
 
 Audio is **44100 Hz, mono, signed 16-bit little-endian PCM**. Ten standard voices: **F1–F5 and M1–M5**. Compatible custom voice JSON files are discovered at startup without rebuilding the image.

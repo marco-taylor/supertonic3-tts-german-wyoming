@@ -10,7 +10,7 @@
   <Overview>Local German Home Assistant TTS using Rust, Supertonic 3, CPU ONNX and native Wyoming. 44100 Hz mono PCM16. First start downloads persistent official models/voices. Phrase streaming is optional and may alter prosody; full synthesis remains available. Mount ownership must allow UID 99/GID 100. Prepared locally; image/icon availability requires separate publication.</Overview>
   <Category>HomeAutomation: Tools: Audio:</Category>
   <WebUI>http://[IP]:[PORT:8881]/health</WebUI>
-  <Icon>https://raw.githubusercontent.com/marco-taylor/supertonic3-tts-german-wyoming/main/icons/supertonic3-tts.png</Icon>
+  <Icon>https://raw.githubusercontent.com/marco-taylor/supertonic3-tts-german-wyoming/main/icons/supertonic3-tts-german-wyoming.png</Icon>
   <ExtraParams>--user=99:100 --stop-timeout=35</ExtraParams>
   <Config Name="Wyoming Port" Target="10200" Default="10200" Mode="tcp" Description="Host Wyoming TCP port; keep container WYOMING_PORT matched" Type="Port" Display="always" Required="true" Mask="false">10200</Config>
   <Config Name="HTTP Port" Target="8881" Default="8881" Mode="tcp" Description="Host health/voice HTTP port; keep container HTTP_PORT matched" Type="Port" Display="always" Required="true" Mask="false">8881</Config>
