@@ -1,0 +1,24 @@
+import net from 'node:net';
+import {spawnSync,spawn} from 'node:child_process';
+import fs from 'node:fs';
+const mode=process.argv[2],output=process.argv[3],name=process.env.BENCH_CONTAINER||'supertonic3-release-test';
+const label=spawnSync('docker',['inspect','-f','{{index .Config.Labels "local.project"}}',name],{encoding:'utf8'});
+if(label.status!==0||label.stdout.trim()!=='supertonic3-tts-german-wyoming')throw Error('container ownership mismatch');
+const data=mode==='idle'?{voice:{name:'F1',language:'de'},text_format:'text'}:{text:'Guten Morgen. Dies ist ein Test der deutschen Sprachausgabe mit Supertonic drei.',voice:{name:'F1',language:'de'}};
+const events=[];let pcmBytes=0,buf=Buffer.alloc(0),stopStarted,stopFinished;
+const socket=net.createConnection({host:'127.0.0.1',port:Number(process.env.BENCH_WYOMING_PORT||10200)});
+const end=new Promise((resolve,reject)=>{socket.on('error',reject);socket.on('close',resolve)});
+socket.on('data',b=>{buf=Buffer.concat([buf,b]);for(;;){const end=buf.indexOf(10);if(end<0)break;const header=JSON.parse(buf.subarray(0,end).toString());const size=(header.data_length||0)+(header.payload_length||0);if(buf.length<end+1+size)break;events.push(header.type);if(header.type==='audio-chunk')pcmBytes+=header.payload_length||0;buf=buf.subarray(end+1+size)}});
+await new Promise((resolve,reject)=>{socket.once('connect',resolve);socket.once('error',reject)});
+socket.write(JSON.stringify({type:mode==='idle'?'synthesize-start':'synthesize',data})+'\n');
+await new Promise(r=>setTimeout(r,100));stopStarted=performance.now();
+const child=spawn('docker',['stop',name],{stdio:'ignore'});
+const stopped=new Promise((resolve,reject)=>child.on('exit',code=>{stopFinished=performance.now();code===0?resolve():reject(Error('docker stop failed'))}));
+await Promise.all([end,stopped]);
+const code=spawnSync('docker',['inspect','-f','{{.State.ExitCode}}',name],{encoding:'utf8'}).stdout.trim();
+if(code!=='0')throw Error('nonzero exit '+code);
+if(mode==='active'&&(!events.includes('audio-stop')||!pcmBytes))throw Error('active audio not drained');
+if(mode==='idle'&&stopFinished-stopStarted>5000)throw Error('idle stream failed to cancel promptly');
+fs.writeFileSync(output,JSON.stringify({mode,events,pcm_bytes:pcmBytes,sigterm_seconds:(stopFinished-stopStarted)/1000,exit_code:0},null,2)+'\n');
+if(spawnSync('docker',['start',name],{stdio:'ignore'}).status!==0)throw Error('restart failed');
+for(let i=0;i<300;i++){await new Promise(r=>setTimeout(r,50));try{const r=await fetch('http://127.0.0.1:'+(process.env.BENCH_HTTP_PORT||8881)+'/health');if(r.ok)break}catch{}}

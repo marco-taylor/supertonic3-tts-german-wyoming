@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Container version="2">
+  <Name>supertonic3-tts-german-wyoming</Name>
+  <Repository>ghcr.io/marco-taylor/supertonic3-tts-german-wyoming:latest</Repository>
+  <Registry>https://github.com/marco-taylor/supertonic3-tts-german-wyoming/pkgs/container/supertonic3-tts-german-wyoming</Registry>
+  <Network>bridge</Network>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/marco-taylor/supertonic3-tts-german-wyoming/issues</Support>
+  <Project>https://github.com/marco-taylor/supertonic3-tts-german-wyoming</Project>
+  <Overview>Local German Home Assistant TTS using Rust, Supertonic 3, CPU ONNX and native Wyoming. 44100 Hz mono PCM16. First start downloads persistent official models/voices. Phrase streaming is optional and may alter prosody; full synthesis remains available. Mount ownership must allow UID 99/GID 100. Prepared locally; image/icon availability requires separate publication.</Overview>
+  <Category>HomeAutomation: Tools: Audio:</Category>
+  <WebUI>http://[IP]:[PORT:8881]/health</WebUI>
+  <Icon>https://raw.githubusercontent.com/marco-taylor/supertonic3-tts-german-wyoming/main/icons/supertonic3-tts.png</Icon>
+  <ExtraParams>--user=99:100 --stop-timeout=35</ExtraParams>
+  <Config Name="Wyoming Port" Target="10200" Default="10200" Mode="tcp" Description="Host Wyoming TCP port; keep container WYOMING_PORT matched" Type="Port" Display="always" Required="true" Mask="false">10200</Config>
+  <Config Name="HTTP Port" Target="8881" Default="8881" Mode="tcp" Description="Host health/voice HTTP port; keep container HTTP_PORT matched" Type="Port" Display="always" Required="true" Mask="false">8881</Config>
+  <Config Name="Models" Target="/app/models" Default="/mnt/user/appdata/supertonic3-tts-german-wyoming/models" Mode="rw" Description="Persistent models, only missing assets downloaded" Type="Path" Display="always" Required="true" Mask="false"/>
+  <Config Name="Voices" Target="/app/voices" Default="/mnt/user/appdata/supertonic3-tts-german-wyoming/voices" Mode="rw" Description="Persistent preset/custom voice JSON; restart to discover custom files" Type="Path" Display="always" Required="true" Mask="false"/>
+  <Config Name="Default Voice" Target="TTS_VOICE" Default="F1" Mode="" Description="Installed voice: F1–F5, M1–M5 or custom JSON filename stem" Type="Variable" Display="always" Required="true" Mask="false">F1</Config>
+  <Config Name="Language" Target="TTS_LANGUAGE" Default="de" Mode="" Description="German default; regional German tags map to de" Type="Variable" Display="always" Required="true" Mask="false">de</Config>
+  <Config Name="Speed" Target="TTS_SPEED" Default="1.0" Mode="" Description="0.25–4.0; 1.0 normal speed" Type="Variable" Display="always" Required="true" Mask="false">1.0</Config>
+  <Config Name="Steps" Target="TTS_STEPS" Default="6" Mode="" Description="5–12 inference steps; N100 recommendation 6" Type="Variable" Display="always" Required="true" Mask="false">6</Config>
+  <Config Name="Threads" Target="TTS_THREADS" Default="4" Mode="" Description="ONNX intra-op threads; N100 recommendation 4" Type="Variable" Display="always" Required="true" Mask="false">4</Config>
+  <Config Name="German Normalization" Target="TTS_GERMAN_NORMALIZATION" Default="true" Mode="" Description="German sensor number/unit normalization before segmentation" Type="Variable" Display="always" Required="true" Mask="false">true</Config>
+  <Config Name="Streaming" Target="TTS_STREAMING" Default="true" Mode="" Description="Optional phrase pipeline; false restores full-context synthesis" Type="Variable" Display="always" Required="true" Mask="false">true</Config>
+  <Config Name="Streaming Prefill (ms)" Target="TTS_STREAM_PREFILL_MS" Default="3500" Mode="" Description="0–5000 ms; conservative tested setting 3500" Type="Variable" Display="always" Required="true" Mask="false">3500</Config>
+  <Config Name="Concurrent Requests" Target="TTS_CONCURRENT_REQUESTS" Default="1" Mode="" Description="Independent engine count; values above one consume more RAM" Type="Variable" Display="always" Required="true" Mask="false">1</Config>
+  <Config Name="Model Directory" Target="MODEL_DIR" Default="/app/models" Mode="" Description="Keep aligned with persistent container model path" Type="Variable" Display="advanced" Required="true" Mask="false">/app/models</Config>
+  <Config Name="Voice Directory" Target="VOICE_DIR" Default="/app/voices" Mode="" Description="Keep aligned with persistent container voice path" Type="Variable" Display="advanced" Required="true" Mask="false">/app/voices</Config>
+  <Config Name="ORT Configured" Target="ORT_CONFIGURED" Default="false" Mode="" Description="Preserve upstream engine unless deliberately tuning" Type="Variable" Display="advanced" Required="true" Mask="false">false</Config>
+  <Config Name="ORT Thread Pool" Target="ORT_THREAD_POOL" Default="global" Mode="" Description="global or session; legacy wrapper requires global" Type="Variable" Display="advanced" Required="true" Mask="false">global</Config>
+  <Config Name="ORT Inter-op Threads" Target="ORT_INTER_THREADS" Default="1" Mode="" Description="ONNX inter-op threads" Type="Variable" Display="advanced" Required="true" Mask="false">1</Config>
+  <Config Name="ORT Spinning" Target="ORT_SPINNING" Default="false" Mode="" Description="Keep disabled for tested N100 configuration" Type="Variable" Display="advanced" Required="true" Mask="false">false</Config>
+  <Config Name="ORT Execution Mode" Target="ORT_EXECUTION_MODE" Default="sequential" Mode="" Description="parallel requires ORT_CONFIGURED=true" Type="Variable" Display="advanced" Required="true" Mask="false">sequential</Config>
+  <Config Name="Optimized Datapath" Target="TTS_OPTIMIZED_DATAPATH" Default="true" Mode="" Description="Bounded audio conversion and output" Type="Variable" Display="advanced" Required="true" Mask="false">true</Config>
+  <Config Name="Buffered TCP" Target="WYOMING_BUFFERED_TCP" Default="true" Mode="" Description="Buffered writes and TCP_NODELAY" Type="Variable" Display="advanced" Required="true" Mask="false">true</Config>
+  <Config Name="AudioChunk Bytes" Target="WYOMING_CHUNK_BYTES" Default="16384" Mode="" Description="Even value from 512 to 262144" Type="Variable" Display="advanced" Required="true" Mask="false">16384</Config>
+  <Config Name="Log Level" Target="RUST_LOG" Default="info" Mode="" Description="Rust tracing filter" Type="Variable" Display="advanced" Required="true" Mask="false">info</Config>
+  <Config Name="Container Wyoming Port" Target="WYOMING_PORT" Default="10200" Mode="" Description="Match internal target of the Wyoming port mapping" Type="Variable" Display="advanced" Required="true" Mask="false">10200</Config>
+  <Config Name="Container HTTP Port" Target="HTTP_PORT" Default="8881" Mode="" Description="Match internal target of the HTTP port mapping" Type="Variable" Display="advanced" Required="true" Mask="false">8881</Config>
+</Container>
