@@ -96,7 +96,7 @@ The service also supports streamed text input, including Home Assistant's compat
 
 | Variable | Default | Description |
 |---|---|---|
-| `TTS_LANGUAGE` | `de` | Supertonic language; German regional codes map to `de` |
+| `TTS_LANGUAGE` | `de` | Supertonic language code. German is the default; 31 languages are supported. German regional codes map to `de` |
 | `TTS_VOICE` | `F1` | Default installed voice |
 | `TTS_SPEED` | `1.0` | Speech speed factor, supported range 0.25–4.0 |
 | `TTS_STEPS` | `6` | Inference steps; upstream supports 5–12 |
@@ -121,6 +121,26 @@ The service also supports streamed text input, including Home Assistant's compat
 | `RUST_LOG` | `info` | Rust logging filter |
 
 Environment variables are read at process startup.
+
+### Language selection
+
+German (`de`) remains the default for this Home Assistant image, but `TTS_LANGUAGE` can be changed without rebuilding the container. Supertonic 3 supports 31 languages:
+
+| Code | Language | Code | Language | Code | Language |
+|---|---|---|---|---|---|
+| `ar` | Arabic | `bg` | Bulgarian | `hr` | Croatian |
+| `cs` | Czech | `da` | Danish | `nl` | Dutch |
+| `en` | English | `et` | Estonian | `fi` | Finnish |
+| `fr` | French | `de` | German | `el` | Greek |
+| `hi` | Hindi | `hu` | Hungarian | `id` | Indonesian |
+| `it` | Italian | `ja` | Japanese | `ko` | Korean |
+| `lv` | Latvian | `lt` | Lithuanian | `pl` | Polish |
+| `pt` | Portuguese | `ro` | Romanian | `ru` | Russian |
+| `sk` | Slovak | `sl` | Slovenian | `es` | Spanish |
+| `sv` | Swedish | `tr` | Turkish | `uk` | Ukrainian |
+| `vi` | Vietnamese |  |  |  |  |
+
+The underlying Rust runtime also accepts `na` for language-agnostic/automatic handling. German-specific text normalization should normally only be enabled with German input; for other languages set `TTS_GERMAN_NORMALIZATION=false`.
 
 ## Streaming
 
