@@ -46,7 +46,7 @@ docker run -d --name supertonic3-tts \
   ghcr.io/marco-taylor/supertonic3-tts-german-wyoming:latest
 ```
 
-The image runs as UID/GID **10001:10001**. Named volumes are initialized with writable image directories. For bind mounts, grant that UID access or run the container with a UID/GID matching the directory owner. The included Unraid template uses `--user=99:100` for the usual `nobody/users` ownership.
+The Docker image defaults to UID/GID **10001:10001**. Named volumes are initialized with writable image directories. For bind mounts, grant that UID access or run the container with a UID/GID matching the directory owner. The included Unraid template overrides the image default with `--user=99:100` for Unraid `nobody:users`. Both persistent folders must be readable and writable by UID/GID 99:100.
 
 First startup requires internet access to download approximately **380 MiB** of official model and voice assets. Existing files are reused and only missing files are downloaded. Downloads are written to temporary files before being moved into place on success.
 

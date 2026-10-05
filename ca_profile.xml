@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CommunityApplications>
+  <Profile>Local German text-to-speech for Home Assistant using Supertonic 3, native Wyoming integration and Rust/ONNX Runtime. CPU-only operation tested on Intel N100, ten standard voices, compatible custom voices, German text normalization and optional phrase streaming. Project documentation and support are available through the linked GitHub repository.</Profile>
+  <Icon>https://raw.githubusercontent.com/marco-taylor/supertonic3-tts-german-wyoming/main/icons/supertonic3-tts-german-wyoming.png</Icon>
+  <WebPage>https://github.com/marco-taylor/supertonic3-tts-german-wyoming</WebPage>
+  <Forum>https://github.com/marco-taylor/supertonic3-tts-german-wyoming/issues</Forum>
+</CommunityApplications>
