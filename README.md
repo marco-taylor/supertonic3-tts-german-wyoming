@@ -1,8 +1,6 @@
 # Supertonic 3 TTS for Home Assistant
 
-<p align="center">
-  <img src="icons/supertonic3-tts-german-wyoming.png" alt="Supertonic 3 TTS German Wyoming" width="260">
-</p>
+<img src="icons/supertonic3-tts-german-wyoming.png" alt="Supertonic 3 TTS German Wyoming" width="160">
 
 Fast, local **German text-to-speech for Home Assistant**, written in Rust and powered by **Supertonic 3**, **ONNX Runtime** and a **native Wyoming server**.
 
