@@ -3,6 +3,7 @@ mod audio;
 mod config;
 mod engine;
 mod normalize;
+mod options;
 mod pipeline;
 mod segment;
 mod wire;
@@ -44,7 +45,7 @@ impl App {
         json!({"status":"ok","engine":"supertonic3-tts","engine_version":"1.3.0","onnx_runtime_version":onnx_version(),"language":self.config.language,
         "german_normalization":self.config.german_normalization,"default_voice":self.config.voice,"voices":self.voices.keys().collect::<Vec<_>>(),"model_loaded":true,
         "sample_rate":44100,"execution_provider":"CPUExecutionProvider","threads":self.config.threads,
-        "steps":self.config.steps,"speed":self.config.speed,"model_load_seconds":self.model_load_seconds,
+        "steps":self.config.steps,"speed":self.config.speed,"voice_profiles":self.config.voice_profiles,"model_load_seconds":self.model_load_seconds,
         "ort_configured":self.config.ort_configured,"ort_thread_pool":self.config.ort_pool,"ort_inter_threads":self.config.ort_inter,"ort_spinning":self.config.ort_spin,"ort_execution_mode":if self.config.ort_parallel{"parallel"}else{"sequential"},
         "chunk_bytes":self.config.chunk_bytes,"optimized_datapath":self.config.optimized_datapath,"buffered_tcp":self.config.buffered_tcp,"streaming":self.config.streaming,"streaming_prefill_ms":self.config.streaming_prefill_ms,"concurrent_requests":self.config.concurrent,"model_revision":assets::REVISION})
     }
@@ -69,7 +70,12 @@ async fn synthesis(app: Arc<App>, data: &Value) -> Result<Vec<u8>> {
         data["text_format"].as_str().is_none_or(|v| v == "text"),
         "only plain text supported"
     );
-    let voice = data["voice"]["name"].as_str().unwrap_or(&app.config.voice);
+    let (voice, options) = options::resolve(
+        data,
+        &app.config.voice,
+        app.config.synthesis_options(),
+        &app.config.voice_profiles,
+    )?;
     let style = app.voices.get(voice).context("unknown voice")?.clone();
     let lang = normalize::language(
         data["voice"]["language"]
@@ -96,9 +102,9 @@ async fn synthesis(app: Arc<App>, data: &Value) -> Result<Vec<u8>> {
         let audio = runtime.block_on(app.engines[lease.index].synthesize(
             &text,
             &style,
-            app.config.speed,
+            options.speed,
             &lang,
-            app.config.steps,
+            options.steps,
         ))?;
         ensure!(
             !audio.is_empty() && audio.iter().all(|v| v.is_finite()),
@@ -107,7 +113,8 @@ async fn synthesis(app: Arc<App>, data: &Value) -> Result<Vec<u8>> {
         tracing::info!(
             seconds = start.elapsed().as_secs_f64(),
             audio_seconds = audio.len() as f64 / 44100.0,
-            steps = app.config.steps,
+            steps = options.steps,
+            speed = options.speed,
             "synthesis complete"
         );
         let pcm = audio
@@ -188,15 +195,16 @@ async fn signal() {
 }
 async fn serve(mut c: Config, mut receiver: watch::Receiver<bool>) -> Result<()> {
     tokio::select! {result=assets::prepare(&c)=>result?,_=receiver.changed()=>return Ok(())};
-    let voices: BTreeMap<String, Arc<Style>> = assets::scan(&c.voices)?
+    let mut voices: BTreeMap<String, Arc<Style>> = assets::scan(&c.voices)?
         .into_iter()
         .map(|(id, style)| (id, Arc::new(style)))
         .collect();
-    if !voices.contains_key(&c.voice) {
+    if !voices.contains_key(&c.voice) && !c.voice_profiles.contains_key(&c.voice) {
         let fallback = voices.keys().next().context("no valid voice")?.clone();
         tracing::warn!(requested=%c.voice,%fallback,"default voice unavailable; using valid fallback");
         c.voice = fallback;
     }
+    options::install_profiles(&mut voices, &c.voice_profiles)?;
     let pool = ort::environment::GlobalThreadPoolOptions::default()
         .with_intra_threads(c.threads)?
         .with_inter_threads(c.ort_inter)?

@@ -2,6 +2,7 @@ use anyhow::{Context, Result, ensure};
 use std::{env, path::PathBuf};
 #[derive(Clone)]
 pub struct Config {
+    pub voice_profiles: crate::options::VoiceProfiles,
     pub german_normalization: bool,
     pub streaming: bool,
     pub streaming_prefill_ms: usize,
@@ -37,7 +38,8 @@ where
 }
 impl Config {
     pub fn load() -> Result<Self> {
-        let c = Self {
+        let mut c = Self {
+            voice_profiles: crate::options::VoiceProfiles::new(),
             german_normalization: parse("TTS_GERMAN_NORMALIZATION", "false")?,
             streaming_prefill_ms: prefill(
                 env::var("TTS_STREAM_PREFILL_MS").ok().as_deref(),
@@ -59,7 +61,7 @@ impl Config {
             language: crate::normalize::language(&get("TTS_LANGUAGE", "de")).to_owned(),
             voice: get("TTS_VOICE", "F1"),
             speed: parse("TTS_SPEED", "1.0")?,
-            steps: parse("TTS_STEPS", "6")?,
+            steps: parse("TTS_STEPS", "5")?,
             threads: parse("TTS_THREADS", "4")?,
             concurrent: parse("TTS_CONCURRENT_REQUESTS", "1")?,
             wyoming: parse("WYOMING_PORT", "10200")?,
@@ -71,11 +73,13 @@ impl Config {
             supertonic3_tts::is_valid_lang(&c.language),
             "unsupported language"
         );
-        supertonic3_tts::validate_voice_quality(c.steps)?;
-        ensure!(
-            c.speed.is_finite() && (0.25..=4.0).contains(&c.speed),
-            "speed must be 0.25..4"
-        );
+        c.synthesis_options()
+            .validate()
+            .context("invalid TTS_SPEED/TTS_STEPS")?;
+        c.voice_profiles = crate::options::parse_profiles(
+            &get("TTS_VOICE_PROFILES", "{}"),
+            c.synthesis_options(),
+        )?;
         ensure!((1..=64).contains(&c.threads), "threads must be 1..64");
         ensure!(
             (1..=16).contains(&c.concurrent),
@@ -106,6 +110,12 @@ impl Config {
             "legacy engine supports only global sequential sessions"
         );
         Ok(c)
+    }
+    pub fn synthesis_options(&self) -> crate::options::SynthesisOptions {
+        crate::options::SynthesisOptions {
+            speed: self.speed,
+            steps: self.steps,
+        }
     }
 }
 

@@ -46,7 +46,12 @@ pub async fn respond<R: AsyncBufRead + Unpin, W: AsyncWrite + Unpin>(
     stop: &mut tokio::sync::watch::Receiver<bool>,
 ) -> Result<()> {
     let received = Instant::now();
-    let voice = data["voice"]["name"].as_str().unwrap_or(&app.config.voice);
+    let (voice, options) = crate::options::resolve(
+        data,
+        &app.config.voice,
+        app.config.synthesis_options(),
+        &app.config.voice_profiles,
+    )?;
     let style = app.voices.get(voice).context("unknown voice")?.clone();
     let language = normalize::language(
         data["voice"]["language"]
@@ -119,9 +124,9 @@ pub async fn respond<R: AsyncBufRead + Unpin, W: AsyncWrite + Unpin>(
             let result = runtime.block_on(worker_app.engines[lease.index].synthesize(
                 &text,
                 &style,
-                worker_app.config.speed,
+                options.speed,
                 &worker_language,
-                worker_app.config.steps,
+                options.steps,
             ));
             let segment_seconds = begin.elapsed().as_secs_f64();
             synthesis_seconds += segment_seconds;
@@ -153,7 +158,8 @@ pub async fn respond<R: AsyncBufRead + Unpin, W: AsyncWrite + Unpin>(
         tracing::info!(
             synthesis_seconds,
             segments = count,
-            steps = worker_app.config.steps,
+            steps = options.steps,
+            speed = options.speed,
             "pipeline synthesis complete"
         );
         drop(lease);

@@ -37,7 +37,7 @@ docker run -d --name supertonic3-tts \
   -e TTS_LANGUAGE=de \
   -e TTS_VOICE=F1 \
   -e TTS_SPEED=1.0 \
-  -e TTS_STEPS=6 \
+  -e TTS_STEPS=5 \
   -e TTS_THREADS=4 \
   -e TTS_CONCURRENT_REQUESTS=1 \
   -e TTS_GERMAN_NORMALIZATION=true \
@@ -83,7 +83,7 @@ The service also supports streamed text input, including Home Assistant's compat
 | Language | `de` |
 | Voice | `F1` |
 | Speed | `1.0` |
-| Steps | `6` |
+| Steps | `5` |
 | Threads | `4` |
 | Concurrent requests | `1` |
 | German normalization | `true` |
@@ -98,8 +98,9 @@ The service also supports streamed text input, including Home Assistant's compat
 |---|---|---|
 | `TTS_LANGUAGE` | `de` | Supertonic language code. German is the default; 31 languages are supported. German regional codes map to `de` |
 | `TTS_VOICE` | `F1` | Default installed voice |
-| `TTS_SPEED` | `1.0` | Speech speed factor, supported range 0.25–4.0 |
-| `TTS_STEPS` | `6` | Inference steps; upstream supports 5–12 |
+| `TTS_SPEED` | `1.0` | Speech speed factor, finite values from 0.8 through 1.2 inclusive; invalid values fail startup |
+| `TTS_STEPS` | `5` | Integer inference steps, 5–12 inclusive, validated by the pinned supertonic3-tts 1.3.0 runtime |
+| `TTS_VOICE_PROFILES` | `{}` | JSON object of named voice profiles with a base `voice` and optional `speed`/`steps`; selected per request with the standard Wyoming voice option |
 | `TTS_THREADS` | `4` | ONNX intra-op threads, 1–64 |
 | `TTS_CONCURRENT_REQUESTS` | `1` | Independent requests/engines, 1–16; higher values use more RAM |
 | `TTS_GERMAN_NORMALIZATION` | `true` | German number/unit preprocessing |
@@ -121,6 +122,40 @@ The service also supports streamed text input, including Home Assistant's compat
 | `RUST_LOG` | `info` | Rust logging filter |
 
 Environment variables are read at process startup.
+
+Changing a Docker environment variable requires recreating the container with the new environment; restarting the same container does not change its configured environment. `/health` reports the running defaults. Home Assistant caches TTS audio by text/language/options, without knowing the server's environment. When testing an environment change, clear the TTS cache with `tts.clear_cache` first and use `cache: false` to disable the file cache. In the verified Home Assistant version, `cache: false` alone does not bypass an existing memory-cache entry. Selecting a different profile changes the voice option and therefore the cache key; changing an existing profile's definition requires the same cache precautions.
+
+### Speed, steps and Home Assistant requests
+
+The Wyoming `Synthesize` and `SynthesizeStart` messages have no standardized `speed` or `steps` fields. The verified Home Assistant 2026.9.4 Wyoming integration sends the selected `voice`/`speaker`, not arbitrary numeric TTS options. Consequently `options: {speed: 0.9, steps: 5}` does **not** configure this service. Direct Wyoming requests containing `speed`/`steps` at the top level, inside `voice`, or inside `options` are rejected with an explanatory error instead of silently ignoring them. The `context` field retains its protocol meaning and is not interpreted as synthesis options. HTTP currently provides health and voice discovery only; there is no HTTP synthesis endpoint.
+
+For per-call settings without a Home Assistant fork, configure named profiles, for example these Docker environment values:
+
+```text
+TTS_SPEED=1.0
+TTS_STEPS=5
+TTS_VOICE_PROFILES={"F1-ruhig":{"voice":"F1","speed":0.9},"F1-detail":{"voice":"F1","steps":6},"F1-klar":{"voice":"F1","speed":0.9,"steps":6}}
+```
+
+`F1-ruhig` overrides voice and speed and inherits steps 5. `F1-detail` overrides voice and steps and inherits speed 1.0. `F1-klar` overrides all three values. No additional profiles or combinations are generated automatically.
+
+The profile names appear as installed voices in Wyoming Describe and `GET /v1/audio/voices`; no duplicate voice files or extra model sessions are needed. Home Assistant can select them via its normal voice selector or a TTS action:
+
+```yaml
+action: tts.speak
+target:
+  entity_id: tts.supertonic3  # Replace with your actual Wyoming TTS entity
+data:
+  media_player_entity_id: media_player.wohnzimmer
+  message: "Das Licht im Wohnzimmer wird eingeschaltet."
+  cache: false
+  options:
+    voice: F1-ruhig
+```
+
+This request uses F1, speed 0.9 and steps 5. A profile overrides only its specified values; omitted fields inherit the environment defaults. Selecting the ordinary F1 voice uses both defaults. Options are resolved once at request start and apply to every segment in both full synthesis and streaming, without changing later requests. For streaming input, the profile is selected in `SynthesizeStart`; the later compatibility `Synthesize` event does not change it. `TTS_VOICE` can also name a configured profile as the default.
+
+Every profile uses the same speed range 0.8–1.2 and integer step range 5–12. Invalid profile JSON, unknown fields, invalid parameter values, unknown base voices, profile chains and names that shadow real voices fail startup. Profile definitions take effect after container recreation and Home Assistant's next voice discovery refresh. Profiles provide a finite set of configured choices; arbitrary per-call numeric values are not exposed by stock Home Assistant/Wyoming. Separate Wyoming instances with different defaults remain another compatible option.
 
 ### Language selection
 

@@ -83,6 +83,7 @@ impl Engine {
         lang: &str,
         steps: usize,
     ) -> Result<Vec<f32>> {
+        crate::options::SynthesisOptions { speed, steps }.validate()?;
         match self {
             Self::Legacy(engine) => {
                 engine
